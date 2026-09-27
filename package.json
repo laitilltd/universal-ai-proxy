@@ -5,6 +5,7 @@
   "scripts": {
     "start": "node server.js",
     "start:tray": "wscript.exe start.vbs",
+    "start:exe": "UniversalAIProxy.exe",
     "test": "node test/e2e.js"
   },
   "keywords": [],

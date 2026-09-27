@@ -6,7 +6,7 @@
 [![Tests](https://img.shields.io/badge/Tests-95%2F95%20Passed-10b981?style=flat-square)](./test/e2e.js)
 [![License](https://img.shields.io/badge/License-ISC-6366f1?style=flat-square)](./package.json)
 
-A production-ready, unified **OpenAI-compatible REST API proxy server** that fronts multiple free AI chat providers alongside your own custom API endpoints. Features automated multi-provider failover routing, custom drag-and-drop combo sequence builders, an interactive dual-pane web UI with live logs, authentication, offline-served static assets, and a Windows System Tray background launcher.
+A production-ready, unified **OpenAI-compatible REST API proxy server** that fronts multiple free AI chat providers alongside your own custom API endpoints. Features automated multi-provider failover routing, custom drag-and-drop combo sequence builders, an interactive dual-pane web UI with live logs, authentication, offline-served static assets, and a portable Windows System Tray launcher.
 
 ![Universal AI Proxy Screenshot](./screen.png)
 
@@ -15,77 +15,121 @@ A production-ready, unified **OpenAI-compatible REST API proxy server** that fro
 ## 🌟 Key Features
 
 - 🔌 **OpenAI API Compatible**: Drop-in replacement for OpenAI SDKs (`POST /v1/chat/completions`) supporting text, streaming (SSE), multimodal base64 image inputs, and real-time web search toggle.
-- 🎨 **Modern Cyberpunk AI Web UI (`/`)**: Resizable split-pane layout (Chat + Real-time Logs), view mode switcher (`Split` / `Chat` / `Logs`), Select2 real-time search filters, and SweetAlert2 dark notifications.
+- 🎨 **Black & White High-Contrast Web UI (`/`)**: Resizable split-pane layout (Chat + Real-time Logs), view mode switcher (`Split` / `Chat` / `Logs`), Select2 real-time search filters, and SweetAlert2 dark notifications.
 - 🔒 **Built-in Authentication & Security**: Password-protected login page (`/login`), salted PBKDF2 password hashing, session tokens, password management, and optional `ADMIN_KEY` protection for mutating endpoints.
 - 🔀 **Smart Auto Failover & Combo Routers**: Configurable drag-and-drop model failover order (`auto`) and custom named combo routers (`combo/<id>`) with automated 30s failure cooldowns.
 - 📦 **Offline & Self-Contained**: 100% local static assets (`/assets/css`, `/assets/js`) with zero dependency on external CDNs.
-- 🖥️ **Windows System Tray Launcher**: Silent background launch via `start.vbs` or `start.cmd`, system tray icon (`app.ico`), auto-start on boot, popup status notification, and tray control menu.
+- 🖥️ **Portable Executable & System Tray Icon**: Run standalone via `UniversalAIProxy.exe`, `start.cmd`, or `start.vbs`. Shows a custom **`UAI`** taskbar system tray icon with context menu controls.
 - 🚀 **12+ Preset API Compatibility Templates**: Instant setup for **OpenRouter**, **Ollama**, **Groq**, **DeepSeek**, **Mistral**, **xAI Grok**, **OpenCode Zen**, **Poolside**, **BazaarLink**, **Kilo Gateway**, **Google Gemini**, and **Anthropic Claude** with direct API key helper links.
 
 ---
 
-## 🚀 Quick Start
+## 📋 System Requirements
 
-### 1. Installation & Standard Launch
-
-```bash
-# Clone repository and install dependencies
-git clone https://github.com/mahediazad/universal-proxy.git
-cd universal-proxy
-npm install
-
-# Start the server
-npm start
-```
-
-Access the application in your browser:
-- **Web UI & Live Logs**: [http://localhost:3000/](http://localhost:3000/)
-- **API Documentation**: [http://localhost:3000/docs](http://localhost:3000/docs)
-- **Login Page**: [http://localhost:3000/login](http://localhost:3000/login) *(Default Admin Password: `password`)*
-
-### 2. Double-Click Windows System Tray Launch
-
-For a silent background launch on Windows with a System Tray icon:
-1. Double-click **`start.vbs`** or **`start.cmd`** in File Explorer.
-2. The proxy server runs silently in the background.
-3. A popup notification will confirm status and offer to open the browser.
-4. Right-click the system tray icon anytime to:
-   - 💬 **Open Chat**: Open web UI on active port.
-   - ⚙️ **Auto Start Enable / Disable**: Toggle Windows startup registry.
-   - 📞 **Developers Contact**: Visit developer portfolio.
-   - ❌ **Quit**: Gracefully stop background processes.
+- **Node.js**: `v20.0.0` or higher installed.
+- **Google Chrome**: Required for browser-backed providers (`duckai`, `unlimitedai`).
+- **Operating System**: Windows 10/11, macOS, or Linux.
 
 ---
 
-## ⚙️ Configuration (`.env`)
+## 📥 Installation
 
-Create a `.env` file in the project root to customize proxy settings:
+```bash
+# 1. Clone the repository
+git clone https://github.com/mahediazad/universal-proxy.git
+cd universal-proxy
+
+# 2. Install Node.js dependencies
+npm install
+
+# 3. Create .env file (Optional)
+# Copy example or create custom environment configuration
+```
+
+---
+
+## 🚀 How to Run & Use
+
+### Method 1: Portable App Executable (Recommended for Windows)
+
+Double-click **`UniversalAIProxy.exe`** (or **`start.cmd`** / **`start.vbs`**):
+1. Starts the Node server silently in the background.
+2. A popup notification will confirm the server is running on `http://localhost:<PORT>/` and offer to open your browser.
+3. Places a taskbar system tray icon showing **`UAI`**.
+4. **Right-Click Tray Menu**:
+   - 💬 **Open Chat**: Opens `http://localhost:3000/` in your default browser.
+   - ⚙️ **Auto Start Enable / Disable**: Toggle Windows startup registry.
+   - 📞 **Developers Contact**: Visit developer website (`http://mahediazad.com`).
+   - ❌ **Quit**: Gracefully stop background server and exit.
+
+### Method 2: Command Line (All Platforms)
+
+```bash
+# Start server via npm
+npm start
+
+# Or launch tray launcher via npm
+npm run start:tray
+```
+
+Access the application in your browser:
+- 💬 **Web UI & Live Logs**: [http://localhost:3000/](http://localhost:3000/)
+- 📚 **API Documentation**: [http://localhost:3000/docs](http://localhost:3000/docs)
+- 🔒 **Login Page**: [http://localhost:3000/login](http://localhost:3000/login) *(Default Admin Password: `password`)*
+
+---
+
+## 🖥️ How to Use the Web Interface
+
+1. **Logging In**:
+   - Navigate to `http://localhost:3000/`.
+   - Enter default password `password` (or your updated password).
+2. **Chatting**:
+   - Use the **Provider** and **Model** dropdowns with real-time search filters to pick an AI model.
+   - Toggle **Search** for web search capabilities or **Stream** for real-time SSE streaming.
+   - Attach images (`.jpg`, `.png`), `.pdf`, or `.txt` files via the 📎 button.
+3. **Adjusting Layout**:
+   - **Resize Panes**: Click and drag the vertical divider handle between Chat and Logs.
+   - **View Switcher**: Click `⚡ Split`, `💬 Chat`, or `📋 Logs` in the navbar to toggle full-screen views.
+4. **Managing Providers & Combo Routers**:
+   - Click the **Providers** button in the top navbar.
+   - Add custom API providers (OpenRouter, Groq, Ollama, DeepSeek, Gemini, etc.).
+   - Drag & drop models into ordered fallback sequences and save as custom `combo/<id>` routers.
+5. **Changing Admin Password**:
+   - Click **🔑 Password** in the top navbar.
+   - Enter your current password and new password to update `auth.json`.
+
+---
+
+## ⚙️ Environment Configuration (`.env`)
+
+Create or edit `.env` in the root directory:
 
 ```env
 # Server Port (Default: 3000)
 PORT=3000
 
-# Optional: Custom Chrome binary path for headless browser providers
+# Path to Google Chrome (Used for headless browser providers duckai and unlimitedai)
 CHROME_PATH=C:\Program Files\Google\Chrome\Application\chrome.exe
 
 # Optional: Admin Key protection for mutating API endpoints
 ADMIN_KEY=your_secret_admin_key
 
-# Optional: Disable authentication for local testing
+# Optional: Set to true for automated test environments to skip login
 DISABLE_AUTH=false
 ```
 
 ---
 
-## 🧪 Testing
+## 🧪 Automated Testing
 
-Run the automated end-to-end test suite (spins up mock upstreams on port 3999):
+Run the end-to-end test suite (spins up mock servers on port 3999):
 
 ```bash
 npm test
 ```
 
-> **Test Suite**: 95/95 test cases passing covering endpoints, authentication, custom provider CRUD, combo failover routing, alias rewrites, request limits, and fake DOM script rendering.
+> **Test Suite Status**: **95/95 passed**. Tests endpoints, authentication, session tokens, custom provider CRUD, combo failover routing, alias rewrites, request limits, and fake DOM script rendering.
 
 ---
 
@@ -100,7 +144,7 @@ npm test
 | `unlimitedai` | UnlimitedAI Chat | Chrome Driver | `chatgpt`, `gemini`, `deepseek`, `claude`, `grok`, `perplexity`, `meta`, `qwen` | Multi-engine browser backend |
 | `aichatting` | AIChatting | HTTP / SSE | `gpt-5.6-luna`, `ask-ai` | HTTP API |
 | `aibanglachat` | AiBanglaChat | HTTP API | `bangla-ai`, `bangla-ai-web` | `-web` variant enables search |
-| `eye2ai` | Eye2.ai Multi-LLM | Socket.io Stream | `chatgpt`, `gemini`, `qwen`, `mistral`, `deepseek`, `ai21`, `amazon-nova`, `glm`, `smart`, `cohere`, `minimax`, `gemma`, `mercury` | WebSockets relay |
+| `eye2ai` | Eye2.ai Multi-LLM | Socket.io Stream | `gemini`, `deepseek`, `qwen`, `mistral`, `amazon-nova`, `chatgpt` | WebSockets relay |
 | `custom` | Custom Providers | User Configured | `<providerId>/<modelId>` | OpenAI, Gemini, Claude, OpenRouter, Groq, Ollama, DeepSeek, etc. |
 
 ---
@@ -133,7 +177,7 @@ npm test
 
 ## 💻 SDK & Code Examples
 
-### 1. Python OpenAI SDK Multimodal & Search Example
+### Python OpenAI SDK Multimodal & Search Example
 
 ```python
 from openai import OpenAI
@@ -160,7 +204,7 @@ response = client.chat.completions.create(
 print("Result:", response.choices[0].message.content)
 ```
 
-### 2. cURL Chat Completion Request
+### cURL Request Example
 
 ```bash
 curl -X POST http://localhost:3000/v1/chat/completions \
@@ -181,6 +225,13 @@ curl -X POST http://localhost:3000/v1/chat/completions \
 
 ```
 universal-proxy/
+├── UniversalAIProxy.exe   # Portable Windows C# executable (System Tray + background server)
+├── start.cmd              # Double-click launcher batch script
+├── start.vbs              # Silent VBScript launcher
+├── build-exe.bat          # 1-Click C# compiler script for UniversalAIProxy.exe
+├── build-icon.ps1         # System Tray icon builder (generates app.ico with UAI text)
+├── TrayApp.cs             # C# source for UniversalAIProxy.exe
+├── app.ico                # Taskbar system tray icon asset
 ├── server.js              # Express 5 app, routing table, UI & docs HTML rendering
 ├── assets/                # Self-contained offline static assets
 │   ├── css/               # Bootstrap 5.3.3 & SweetAlert2 Dark CSS
@@ -201,11 +252,6 @@ universal-proxy/
 │   ├── eye2ai.js          # WebSocket Socket.io provider
 │   ├── unlimitedai.js     # Headless Chrome provider
 │   └── duckai.js          # Headless Chrome provider with VQD solver
-├── start-tray.ps1         # Windows System Tray launcher & server manager
-├── build-icon.ps1         # Custom System Tray app icon generator
-├── app.ico                # Project icon asset
-├── start.vbs              # Silent VBScript launcher for start-tray.ps1
-├── start.cmd              # Windows Batch launcher
 ├── custom-providers.json  # Persisted custom API providers
 ├── combos.json            # Persisted combo routers & auto sequence
 ├── auth.json              # Persisted admin password hash
