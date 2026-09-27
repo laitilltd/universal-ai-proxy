@@ -1,0 +1,21 @@
+{
+  "name": "universal-proxy",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server.js",
+    "start:tray": "wscript.exe start.vbs",
+    "test": "node test/e2e.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "axios": "^1.20.0",
+    "dotenv": "^18.0.3",
+    "express": "^5.2.1",
+    "puppeteer-core": "^24.43.1",
+    "socket.io-client": "^4.8.3"
+  }
+}
