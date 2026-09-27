@@ -109,6 +109,10 @@ Create or edit `.env` in the root directory:
 # Server Port (Default: 3000)
 PORT=3000
 
+# Enable/disable Headless Chrome browser providers (duckai & unlimitedai)
+# Set to false on cPanel / Shared Hosting environments where Chrome is not installed
+ENABLE_BROWSER=true
+
 # Path to Google Chrome (Used for headless browser providers duckai and unlimitedai)
 CHROME_PATH=C:\Program Files\Google\Chrome\Application\chrome.exe
 

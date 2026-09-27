@@ -6,6 +6,7 @@ const eye2ai = require('./eye2ai');
 const duckai = require('./duckai');
 const custom = require('./custom');
 const combos = require('./combos');
+const { isBrowserEnabled } = require('../lib/browser');
 
 const BUILTIN_FALLBACK_MODELS = [
   'aibanglachat/bangla-ai',
@@ -56,6 +57,9 @@ function candidatesForAttempt(customSequence = null) {
     const saved = combos.getAutoSequence();
     all = saved.length > 0 ? saved : getCandidateModels();
   }
+  if (!isBrowserEnabled()) {
+    all = all.filter(m => !m.startsWith('duckai/') && !m.startsWith('unlimitedai/'));
+  }
   const now = Date.now();
   const healthy = all.filter(m => (failUntil.get(m) || 0) <= now);
   return healthy.length > 0 ? healthy : all;
@@ -85,7 +89,11 @@ function getModels() {
 
 function getCandidateModels() {
   const customModels = custom.getModels().map(m => m.id);
-  return [...new Set([...BUILTIN_FALLBACK_MODELS, ...customModels])];
+  let builtins = BUILTIN_FALLBACK_MODELS;
+  if (!isBrowserEnabled()) {
+    builtins = builtins.filter(m => !m.startsWith('duckai/') && !m.startsWith('unlimitedai/'));
+  }
+  return [...new Set([...builtins, ...customModels])];
 }
 
 async function dispatchChat(targetModel, body, mockRes, generateId, reqHeaders) {

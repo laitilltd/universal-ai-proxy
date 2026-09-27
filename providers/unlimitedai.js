@@ -1,5 +1,5 @@
 const sse = require('../lib/sse');
-const { createBrowserDriver } = require('../lib/browser');
+const { createBrowserDriver, isBrowserEnabled } = require('../lib/browser');
 
 const SITE_URL = 'https://unlimitedai.org/chat/';
 
@@ -25,6 +25,7 @@ const driver = createBrowserDriver({
 });
 
 function getModels() {
+  if (!isBrowserEnabled()) return [];
   return MODELS.map(m => ({
     id: m.id,
     object: 'model',

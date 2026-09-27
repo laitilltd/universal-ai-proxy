@@ -1,4 +1,5 @@
 'use strict';
+process.env.ENABLE_BROWSER = 'true';
 /* E2E harness for universal-proxy: real server + local echo provider,
    stubbed external hosts, fake-DOM run of the / UI script. */
 const path = require('path');
@@ -332,6 +333,26 @@ async function main() {
 
     await realFetch.call(global, BASE + '/v1/custom-providers/imp-prov', { method: 'DELETE' });
     await realFetch.call(global, BASE + '/v1/combos/imp-combo', { method: 'DELETE' });
+  }
+
+  section('ENABLE_BROWSER toggle filter');
+  {
+    const duck = require('../providers/duckai');
+    const unlim = require('../providers/unlimitedai');
+    const autoMod = require('../providers/auto');
+    const { isBrowserEnabled } = require('../lib/browser');
+
+    check(isBrowserEnabled() === true, 'browser enabled by default in e2e');
+    check(duck.getModels().length > 0, 'duckai models returned when enabled');
+    check(unlim.getModels().length > 0, 'unlimitedai models returned when enabled');
+
+    process.env.ENABLE_BROWSER = 'false';
+    check(isBrowserEnabled() === false, 'isBrowserEnabled() false when env set to false');
+    check(duck.getModels().length === 0, 'duckai models empty when disabled');
+    check(unlim.getModels().length === 0, 'unlimitedai models empty when disabled');
+    check(!autoMod.getCandidateModels().some(m => m.startsWith('duckai/') || m.startsWith('unlimitedai/')), 'auto candidates exclude browser models when disabled');
+
+    process.env.ENABLE_BROWSER = 'true';
   }
 
   section('Admin Auth (ADMIN_KEY protection)');

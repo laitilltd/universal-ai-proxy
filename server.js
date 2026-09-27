@@ -13,6 +13,7 @@ const auto = require('./providers/auto');
 const combos = require('./providers/combos');
 const logger = require('./lib/logger');
 const auth = require('./lib/auth');
+const browser = require('./lib/browser');
 
 const app = express();
 app.use(express.json({ limit: '64mb' }));
@@ -1081,7 +1082,7 @@ app.get('/', (req, res) => {
                   </div>
                   <div class="col-12" id="cpUrlGroup">
                     <label class="pm-label">Base URL</label>
-                    <input type="text" id="cpUrl" class="form-control form-control-sm" placeholder="https://api.groq.com/openai/v1 (or http://localhost:11434/v1)">
+                    <input type="text" id="cpUrl" class="form-control form-control-sm" placeholder="https://api.groq.com/openai/v1 (or http://localhost:11434/v1)" oninput="onCpUrlInput()">
                   </div>
                   <div class="col-12">
                     <div class="d-flex justify-content-between align-items-center mb-1">
@@ -1273,10 +1274,10 @@ app.get('/', (req, res) => {
         keyUrl: 'https://openrouter.ai/keys'
       },
       opencode: {
-        url: 'https://opencode.zen/api/v1',
+        url: 'https://opencode.ai/zen/v1',
         id: 'opencode',
         name: 'OpenCode Zen',
-        placeholder: 'https://opencode.zen/api/v1',
+        placeholder: 'https://opencode.ai/zen/v1',
         keyUrl: 'https://opencode.ai/'
       },
       ollama: {
@@ -1337,7 +1338,7 @@ app.get('/', (req, res) => {
       }
     };
 
-    function onCpTypeChange() {
+    function onCpTypeChange(force) {
       const type = document.getElementById('cpType').value;
       const preset = CP_PRESETS[type] || CP_PRESETS.openai;
       const urlInput = document.getElementById('cpUrl');
@@ -1350,16 +1351,25 @@ app.get('/', (req, res) => {
         return CP_PRESETS[k].url && CP_PRESETS[k].url === current;
       });
 
-      if (isPresetUrl) {
+      if (force || isPresetUrl) {
         urlInput.value = preset.url || '';
       }
       urlInput.placeholder = preset.placeholder || '';
 
-      if (!idInput.value.trim() && preset.id) {
-        idInput.value = preset.id;
+      const currentId = idInput.value.trim();
+      const isPresetId = !currentId || Object.keys(CP_PRESETS).some(function (k) {
+        return CP_PRESETS[k].id && CP_PRESETS[k].id === currentId;
+      });
+      if (force || isPresetId) {
+        idInput.value = preset.id || '';
       }
-      if (!nameInput.value.trim() && preset.name) {
-        nameInput.value = preset.name;
+
+      const currentName = nameInput.value.trim();
+      const isPresetName = !currentName || Object.keys(CP_PRESETS).some(function (k) {
+        return CP_PRESETS[k].name && CP_PRESETS[k].name === currentName;
+      });
+      if (force || isPresetName) {
+        nameInput.value = preset.name || '';
       }
 
       if (preset.keyUrl) {
@@ -1370,6 +1380,25 @@ app.get('/', (req, res) => {
         keyLink.classList.add('d-none');
       }
       syncCpTypeSelect2UI();
+    }
+
+    function onCpUrlInput() {
+      const urlInput = document.getElementById('cpUrl');
+      if (!urlInput) return;
+      const val = urlInput.value.trim().toLowerCase();
+      if (!val) return;
+
+      const foundKey = Object.keys(CP_PRESETS).find(function (k) {
+        return CP_PRESETS[k].url && CP_PRESETS[k].url.toLowerCase() === val;
+      });
+
+      if (foundKey) {
+        const select = document.getElementById('cpType');
+        if (select && select.value !== foundKey) {
+          select.value = foundKey;
+          onCpTypeChange(false);
+        }
+      }
     }
 
     function initCpTypeSelect2() {
@@ -1435,7 +1464,7 @@ app.get('/', (req, res) => {
       const select = document.getElementById('cpType');
       if (select) {
         select.value = value;
-        onCpTypeChange();
+        onCpTypeChange(true);
       }
       syncCpTypeSelect2UI();
       closeCpTypeSelect2Menu();
@@ -1700,11 +1729,21 @@ app.get('/', (req, res) => {
         const providers = Array.from(new Set(allModelsList.map(m => m.provider || 'default')));
         let phtml = '<option value="all">All Providers</option>';
         for (const p of providers) {
-          phtml += \`<option value="\${p}">\${p.toUpperCase()}</option>\`;
+          phtml += '<option value="' + p + '">' + p.toUpperCase() + '</option>';
         }
         provSelect.innerHTML = phtml;
         provSelect.value = currentProv;
         syncProvSelect2Options();
+      }
+
+      const logProvFilter = document.getElementById('providerFilter');
+      if (logProvFilter) {
+        const duckOpt = logProvFilter.querySelector('option[value="duckai"]');
+        const unlimOpt = logProvFilter.querySelector('option[value="unlimitedai"]');
+        const hasDuck = allModelsList.some(m => m.provider === 'duckai');
+        const hasUnlim = allModelsList.some(m => m.provider === 'unlimitedai');
+        if (duckOpt) duckOpt.style.display = hasDuck ? '' : 'none';
+        if (unlimOpt) unlimOpt.style.display = hasUnlim ? '' : 'none';
       }
 
       filterModels();
@@ -3894,16 +3933,20 @@ const server = app.listen(PORT, async () => {
   console.log(`Home UI: http://localhost:${PORT}/`);
   console.log(`API:     http://localhost:${PORT}/docs`);
 
-  try {
-    await unlimitedai.initBrowser();
-  } catch (e) {
-    console.error('[Browser Init Error - UnlimitedAI]:', e.message);
-  }
+  if (browser.isBrowserEnabled()) {
+    try {
+      await unlimitedai.initBrowser();
+    } catch (e) {
+      console.error('[Browser Init Error - UnlimitedAI]:', e.message);
+    }
 
-  try {
-    await duckai.initBrowser();
-  } catch (e) {
-    console.error('[Browser Init Error - DuckAI]:', e.message);
+    try {
+      await duckai.initBrowser();
+    } catch (e) {
+      console.error('[Browser Init Error - DuckAI]:', e.message);
+    }
+  } else {
+    console.log('[Server] Headless Chrome browser providers (duckai, unlimitedai) disabled via ENABLE_BROWSER=false.');
   }
 });
 

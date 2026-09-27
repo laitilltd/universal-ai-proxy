@@ -1,5 +1,5 @@
 const sse = require('../lib/sse');
-const { createBrowserDriver } = require('../lib/browser');
+const { createBrowserDriver, isBrowserEnabled } = require('../lib/browser');
 
 const MODELS = [
   { id: 'duckai/gpt-5.6-luna',      backendModel: 'gpt-5.6-luna',       name: 'GPT 5.6 Luna',       provider: 'duckai', ownedBy: 'openai' },
@@ -26,6 +26,7 @@ const driver = createBrowserDriver({
 });
 
 function getModels() {
+  if (!isBrowserEnabled()) return [];
   return MODELS.map(m => ({
     id: m.id,
     object: 'model',
