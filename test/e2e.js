@@ -307,6 +307,33 @@ async function main() {
     check(rf.status === 200 && rj.status === 'ok' && Array.isArray(rj.models) && rj.models.length === 2, 'refresh model discovery', JSON.stringify(rj).slice(0, 160));
   }
 
+  section('Config Export & Import (/v1/config)');
+  {
+    const exp = await realFetch.call(global, BASE + '/v1/config/export');
+    const ej = await exp.json();
+    check(exp.status === 200 && Array.isArray(ej.providers) && Array.isArray(ej.combos), 'config export returns providers & combos');
+
+    const imp = await realFetch.call(global, BASE + '/v1/config/import', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        providers: [{ id: 'imp-prov', name: 'Imported Provider', type: 'openai', url: 'http://127.0.0.1:4567', apiKey: '', models: ['m1'] }],
+        combos: [{ id: 'imp-combo', name: 'Imported Combo', sequence: ['imp-prov/m1'] }]
+      })
+    });
+    const ij = await imp.json();
+    check(imp.status === 200 && ij.status === 'ok' && ij.importedProviders === 1 && ij.importedCombos === 1, 'config import succeeds');
+
+    const listP = await (await realFetch.call(global, BASE + '/v1/custom-providers')).json();
+    check(listP.data.some(p => p.id === 'imp-prov'), 'imported provider listed');
+
+    const listC = await (await realFetch.call(global, BASE + '/v1/combos')).json();
+    check(listC.data.some(c => c.id === 'imp-combo'), 'imported combo listed');
+
+    await realFetch.call(global, BASE + '/v1/custom-providers/imp-prov', { method: 'DELETE' });
+    await realFetch.call(global, BASE + '/v1/combos/imp-combo', { method: 'DELETE' });
+  }
+
   section('Admin Auth (ADMIN_KEY protection)');
   {
     process.env.ADMIN_KEY = 'test-secret-key';

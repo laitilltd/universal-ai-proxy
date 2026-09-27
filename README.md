@@ -172,6 +172,8 @@ npm test
 | `POST` | `/v1/combos` | Create or update a custom combo router |
 | `DELETE` | `/v1/combos/:id` | Remove a custom combo router |
 | `POST` | `/v1/combos/auto-sequence` | Set global `auto` failover sequence priority |
+| `GET` | `/v1/config/export` | Download JSON backup of providers, combos, & auto sequence |
+| `POST` | `/v1/config/import` | Import and merge JSON backup configuration |
 
 ---
 

@@ -465,6 +465,69 @@ app.delete('/v1/combos/:id', requireAdminAuth, (req, res) => {
   }
 });
 
+// Configuration Backup (Import & Export) endpoints
+app.get('/v1/config/export', (req, res) => {
+  try {
+    const configData = {
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      providers: custom.getProviders(),
+      combos: combos.getCombos(),
+      autoSequence: combos.getAutoSequence()
+    };
+
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="universal-proxy-config-${Date.now()}.json"`);
+    return res.json(configData);
+  } catch (err) {
+    return res.status(500).json({ error: { message: 'Failed to export configuration: ' + err.message } });
+  }
+});
+
+app.post('/v1/config/import', requireAdminAuth, async (req, res) => {
+  try {
+    const { providers, combos: comboList, autoSequence } = req.body || {};
+
+    if (!Array.isArray(providers) && !Array.isArray(comboList) && !Array.isArray(autoSequence)) {
+      return res.status(400).json({ error: { message: 'Invalid configuration payload. Must contain providers, combos, or autoSequence array.' } });
+    }
+
+    let importedProvidersCount = 0;
+    let importedCombosCount = 0;
+
+    if (Array.isArray(providers)) {
+      for (const p of providers) {
+        if (p && (p.id || p.name)) {
+          await custom.addProvider(p);
+          importedProvidersCount++;
+        }
+      }
+    }
+
+    if (Array.isArray(comboList)) {
+      for (const c of comboList) {
+        if (c && (c.id || c.name)) {
+          combos.saveCombo(c);
+          importedCombosCount++;
+        }
+      }
+    }
+
+    if (Array.isArray(autoSequence)) {
+      combos.setAutoSequence(autoSequence);
+    }
+
+    return res.json({
+      status: 'ok',
+      message: `Successfully imported ${importedProvidersCount} provider(s) and ${importedCombosCount} combo router(s).`,
+      importedProviders: importedProvidersCount,
+      importedCombos: importedCombosCount
+    });
+  } catch (err) {
+    return res.status(500).json({ error: { message: 'Failed to import configuration: ' + err.message } });
+  }
+});
+
 // Unified models endpoint
 app.get('/v1/models', (req, res) => {
   const allModels = [
@@ -948,12 +1011,17 @@ app.get('/', (req, res) => {
   <div class="modal fade" id="customProviderModal" tabindex="-1" aria-labelledby="customProviderModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
       <div class="modal-content">
-        <div class="modal-header">
+        <div class="modal-header d-flex justify-content-between align-items-center">
           <div>
             <h5 class="modal-title" id="customProviderModalLabel"><span class="title-ico">🧩</span> Manage Providers & Combo Routers</h5>
             <div class="modal-subtitle">Connect custom APIs · Build drag & drop failover sequences</div>
           </div>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          <div class="d-flex align-items-center gap-2 ms-auto">
+            <button type="button" class="btn btn-sm btn-outline-info" onclick="exportConfig()" title="Export Providers & Combos Backup JSON">📥 Export</button>
+            <button type="button" class="btn btn-sm btn-outline-warning" onclick="triggerImportConfig()" title="Import Providers & Combos Backup JSON">📤 Import</button>
+            <input type="file" id="importConfigFileInput" accept=".json" style="display:none;" onchange="handleImportConfigFile(event)">
+            <button type="button" class="btn-close btn-close-white ms-2" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
         </div>
         <div class="modal-body">
           <ul class="nav pm-tabs" id="providerModalTabs" role="tablist">
@@ -1120,7 +1188,11 @@ app.get('/', (req, res) => {
             </div>
           </div>
         </div>
-        <div class="modal-footer">
+        <div class="modal-footer d-flex justify-content-between align-items-center">
+          <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-sm btn-outline-info" onclick="exportConfig()"><span class="me-1">📥</span> Export Config</button>
+            <button type="button" class="btn btn-sm btn-outline-warning" onclick="triggerImportConfig()"><span class="me-1">📤</span> Import Config</button>
+          </div>
           <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Close</button>
         </div>
       </div>
@@ -2922,6 +2994,106 @@ app.get('/', (req, res) => {
       });
     }
 
+    async function exportConfig() {
+      try {
+        const res = await fetch('/v1/config/export', {
+          headers: { 'x-session-token': getSessionToken() }
+        });
+        if (!res.ok) throw new Error('Export request failed');
+        const data = await res.json();
+        const jsonStr = JSON.stringify(data, null, 2);
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'universal-proxy-backup-' + new Date().toISOString().slice(0, 10) + '.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        if (typeof Swal !== 'undefined' && typeof Swal.fire === 'function') {
+          Swal.fire({
+            icon: 'success',
+            title: 'Exported Configuration!',
+            text: 'Providers and combos backup downloaded.',
+            toast: true,
+            position: 'top-end',
+            timer: 3000,
+            showConfirmButton: false
+          });
+        }
+      } catch (err) {
+        if (typeof Swal !== 'undefined' && typeof Swal.fire === 'function') {
+          Swal.fire('Export Error', err.message, 'error');
+        } else {
+          alert('Export Error: ' + err.message);
+        }
+      }
+    }
+
+    function triggerImportConfig() {
+      const input = document.getElementById('importConfigFileInput');
+      if (input) {
+        input.value = '';
+        input.click();
+      }
+    }
+
+    async function handleImportConfigFile(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = async function (e) {
+        try {
+          const content = e.target.result;
+          const parsed = JSON.parse(content);
+          if (!parsed || (typeof parsed !== 'object')) {
+            throw new Error('Invalid JSON file format');
+          }
+
+          const res = await fetch('/v1/config/import', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-session-token': getSessionToken()
+            },
+            body: JSON.stringify(parsed)
+          });
+          const data = await res.json();
+          if (res.ok && data.status === 'ok') {
+            if (typeof Swal !== 'undefined' && typeof Swal.fire === 'function') {
+              await Swal.fire({
+                icon: 'success',
+                title: 'Import Successful!',
+                text: data.message || 'Configuration imported successfully.',
+                confirmButtonColor: '#2563eb'
+              });
+            } else {
+              alert(data.message || 'Import successful!');
+            }
+            if (typeof loadCustomProvidersList === 'function') loadCustomProvidersList();
+            if (typeof loadComboManager === 'function') loadComboManager();
+            if (typeof fetchModels === 'function') fetchModels();
+          } else {
+            const errorMsg = (data.error && data.error.message) || 'Import failed';
+            if (typeof Swal !== 'undefined' && typeof Swal.fire === 'function') {
+              Swal.fire('Import Failed', errorMsg, 'error');
+            } else {
+              alert('Import Failed: ' + errorMsg);
+            }
+          }
+        } catch (err) {
+          if (typeof Swal !== 'undefined' && typeof Swal.fire === 'function') {
+            Swal.fire('Import Error', 'Could not read JSON file: ' + err.message, 'error');
+          } else {
+            alert('Import Error: ' + err.message);
+          }
+        }
+      };
+      reader.readAsText(file);
+    }
+
     fetchLogs();
     toggleAutoRefresh();
     initSplitView();
@@ -3142,6 +3314,7 @@ app.get('/docs', (req, res) => {
           <a href="#providers" class="docs-nav-link">🌐 Built-in Web Providers</a>
           <a href="#custom-providers" class="docs-nav-link">🔌 Custom API Providers</a>
           <a href="#combo-routers" class="docs-nav-link">🎛 Combo Routers & Auto</a>
+          <a href="#backup-restore" class="docs-nav-link">📦 Backup & Restore</a>
           <a href="#logs" class="docs-nav-link">📋 Console Logs API</a>
           <a href="#examples" class="docs-nav-link">💻 Code Examples</a>
         </div>
@@ -3424,6 +3597,36 @@ app.get('/docs', (req, res) => {
       "openrouter/google/gemini-2.0-flash-001"
     ]
   }'</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section: Backup & Restore -->
+        <div id="backup-restore" class="card">
+          <div class="card-header d-flex align-items-center justify-content-between">
+            <span>📦 Configuration Backup & Restore (/v1/config)</span>
+            <span class="small text-secondary">Export & Import Providers & Combos</span>
+          </div>
+          <div class="card-body">
+            <p class="text-secondary">Export or import your custom API providers, combo routers, and auto failover sequence order as a JSON backup file.</p>
+
+            <div class="table-responsive mb-3">
+              <table class="table table-dark align-middle">
+                <thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead>
+                <tbody>
+                  <tr><td><span class="badge badge-method method-get">GET</span></td><td><code>/v1/config/export</code></td><td>Download JSON backup of all custom providers, combos, & auto sequence</td></tr>
+                  <tr><td><span class="badge badge-method method-post">POST</span></td><td><code>/v1/config/import</code></td><td>Import and merge JSON backup configuration payload</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <h6 class="fw-bold mb-2">Export Configuration Example</h6>
+            <div class="code-box">
+              <div class="code-box-header">
+                <span>cURL</span>
+                <button class="btn btn-sm btn-outline-light py-0 px-2 small" onclick="copyCodeBlock(this)">📋 Copy</button>
+              </div>
+              <pre><code>curl -X GET http://localhost:3000/v1/config/export -o universal-proxy-backup.json</code></pre>
             </div>
           </div>
         </div>
