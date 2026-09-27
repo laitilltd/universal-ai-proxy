@@ -19,7 +19,7 @@ A production-ready, unified **OpenAI-compatible REST API proxy server** that fro
 - 🔒 **Built-in Authentication & Security**: Password-protected login page (`/login`), salted PBKDF2 password hashing, session tokens, password management, and optional `ADMIN_KEY` protection for mutating endpoints.
 - 🔀 **Smart Auto Failover & Combo Routers**: Configurable drag-and-drop model failover order (`auto`) and custom named combo routers (`combo/<id>`) with automated 30s failure cooldowns.
 - 📦 **Offline & Self-Contained**: 100% local static assets (`/assets/css`, `/assets/js`) with zero dependency on external CDNs.
-- 🖥️ **Portable Executable & System Tray Icon**: Run standalone via `UniversalAIProxy.exe`, `start.cmd`, or `start.vbs`. Shows a custom **`UAI`** taskbar system tray icon with context menu controls.
+- 🖥️ **Portable Executable & System Tray Icon**: Run standalone via `start.exe`, `start.cmd`, or `start.vbs`. Shows a custom **`UAI`** taskbar system tray icon with context menu controls.
 - 🚀 **12+ Preset API Compatibility Templates**: Instant setup for **OpenRouter**, **Ollama**, **Groq**, **DeepSeek**, **Mistral**, **xAI Grok**, **OpenCode Zen**, **Poolside**, **BazaarLink**, **Kilo Gateway**, **Google Gemini**, and **Anthropic Claude** with direct API key helper links.
 
 ---
@@ -52,7 +52,7 @@ npm install
 
 ### Method 1: Portable App Executable (Recommended for Windows)
 
-Double-click **`UniversalAIProxy.exe`** (or **`start.cmd`** / **`start.vbs`**):
+Double-click **`start.exe`** (or **`start.cmd`** / **`start.vbs`**):
 1. Starts the Node server silently in the background.
 2. A popup notification will confirm the server is running on `http://localhost:<PORT>/` and offer to open your browser.
 3. Places a taskbar system tray icon showing **`UAI`**.
@@ -225,12 +225,12 @@ curl -X POST http://localhost:3000/v1/chat/completions \
 
 ```
 universal-proxy/
-├── UniversalAIProxy.exe   # Portable Windows C# executable (System Tray + background server)
+├── start.exe              # Portable Windows C# executable (System Tray + background server)
 ├── start.cmd              # Double-click launcher batch script
 ├── start.vbs              # Silent VBScript launcher
-├── build-exe.bat          # 1-Click C# compiler script for UniversalAIProxy.exe
+├── build-exe.bat          # 1-Click C# compiler script for start.exe
 ├── build-icon.ps1         # System Tray icon builder (generates app.ico with UAI text)
-├── TrayApp.cs             # C# source for UniversalAIProxy.exe
+├── TrayApp.cs             # C# source for start.exe
 ├── app.ico                # Taskbar system tray icon asset
 ├── server.js              # Express 5 app, routing table, UI & docs HTML rendering
 ├── assets/                # Self-contained offline static assets

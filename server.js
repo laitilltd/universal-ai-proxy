@@ -20,6 +20,34 @@ app.use('/assets', express.static(path.join(__dirname, 'assets')));
 app.use(auth.requireAuthMiddleware);
 
 // Auth endpoints
+app.get('/v1/auth/status', (req, res) => {
+  return res.json({
+    status: 'ok',
+    disableAuth: auth.isAuthDisabled(),
+    authenticated: auth.isValidSession(req)
+  });
+});
+
+app.post('/v1/auth/toggle-auth', (req, res) => {
+  const { disableAuth } = req.body || {};
+  if (typeof disableAuth !== 'boolean') {
+    return res.status(400).json({ error: { message: 'Invalid parameter disableAuth' } });
+  }
+  auth.setAuthDisabled(disableAuth);
+  return res.json({ status: 'ok', disableAuth: auth.isAuthDisabled() });
+});
+
+app.get('/v1/auth/key', (req, res) => {
+  const authHeader = req.headers.authorization || '';
+  const bearerToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
+  const headerToken = req.headers['x-session-token'] || '';
+  let token = bearerToken || headerToken;
+  if (!token || !auth.activeSessions.has(token)) {
+    token = auth.createSession();
+  }
+  return res.json({ status: 'ok', token, disableAuth: auth.isAuthDisabled() });
+});
+
 app.post('/v1/auth/login', (req, res) => {
   const { password } = req.body || {};
   if (!password || !auth.authenticatePassword(password)) {
@@ -773,6 +801,7 @@ app.get('/', (req, res) => {
 
       <div class="d-flex align-items-center gap-2">
         <button class="btn btn-sm pm-btn-emerald px-3 fw-semibold" data-bs-toggle="modal" data-bs-target="#customProviderModal" onclick="loadCustomProvidersList()">Providers</button>
+        <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#apiKeyModal" onclick="showApiKeyModal()" title="View & Copy API Key">📋 API Key</button>
         <a href="/docs" class="btn btn-sm btn-outline-light">API</a>
         <button class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#changePasswordModal" title="Change Admin Password">🔑 Password</button>
         <button class="btn btn-sm btn-outline-danger" onclick="handleLogout()" title="Log out">🚪 Logout</button>
@@ -2843,10 +2872,92 @@ app.get('/', (req, res) => {
       localStorage.setItem('up_layout_mode', mode);
     }
 
+    function getSessionToken() {
+      try { return typeof localStorage !== 'undefined' ? (localStorage.getItem('up_session_token') || '') : ''; } catch (e) { return ''; }
+    }
+
+    function setSessionToken(t) {
+      try { if (typeof localStorage !== 'undefined') localStorage.setItem('up_session_token', t); } catch (e) {}
+    }
+
+    async function showApiKeyModal() {
+      let token = getSessionToken();
+      if (!token) {
+        try {
+          const res = await fetch('/v1/auth/key', {
+            headers: { 'x-session-token': getSessionToken() }
+          });
+          const data = await res.json();
+          if (data.token) {
+            token = data.token;
+            setSessionToken(token);
+          }
+        } catch (e) {
+          token = '';
+        }
+      }
+      const input = document.getElementById('modalApiKeyInput');
+      if (input) input.value = token || 'sk-universal-proxy-token';
+    }
+
+    function copyApiKeyFromModal(btn) {
+      const input = document.getElementById('modalApiKeyInput');
+      if (!input || !input.value) return;
+      navigator.clipboard.writeText(input.value).then(() => {
+        const orig = btn.innerHTML;
+        btn.innerHTML = '✅ Copied!';
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn-success');
+        setTimeout(() => {
+          btn.innerHTML = orig;
+          btn.classList.remove('btn-success');
+          btn.classList.add('btn-primary');
+        }, 2000);
+      }).catch(err => {
+        input.select();
+        document.execCommand('copy');
+        if (typeof Swal !== 'undefined' && typeof Swal.fire === 'function') {
+          Swal.fire({ icon: 'success', title: 'Copied API Key!', toast: true, position: 'top-end', timer: 2000, showConfirmButton: false });
+        }
+      });
+    }
+
     fetchLogs();
     toggleAutoRefresh();
     initSplitView();
   </script>
+
+  <!-- API Key Modal -->
+  <div class="modal fade" id="apiKeyModal" tabindex="-1" aria-labelledby="apiKeyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content" style="background: #0f172a; border: 1px solid #1e293b; color: #f8fafc; border-radius: 16px;">
+        <div class="modal-header" style="border-bottom: 1px solid #1e293b;">
+          <h5 class="modal-title fw-bold" id="apiKeyModalLabel">📋 API Key</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="pm-label text-uppercase" style="letter-spacing:0.8px;">Your Session API Key</label>
+            <div class="input-group">
+              <input type="text" id="modalApiKeyInput" class="form-control form-control-sm font-monospace" style="background: #070a12; color: #60a5fa; border: 1px solid #334155;" readonly value="Loading key...">
+              <button class="btn btn-sm btn-primary fw-bold px-3" type="button" onclick="copyApiKeyFromModal(this)">📋 Copy API Key</button>
+            </div>
+            <div class="form-text small text-secondary mt-1" style="font-size:0.78rem;">Copy this key to use in Copilot, Cursor, Continue, or any OpenAI-compatible client tool.</div>
+          </div>
+
+          <div class="p-3 rounded mb-1" style="background: #070a12; border: 1px solid #1e293b; font-size: 0.82rem;">
+            <div class="fw-bold mb-1 text-info">🛠️ Integration Quick Reference</div>
+            <div class="text-secondary mb-1"><strong>Base URL:</strong> <code style="color: #38bdf8;">http://localhost:3000/v1</code></div>
+            <div class="text-secondary mb-1"><strong>API Key:</strong> Paste copied key above</div>
+            <div class="text-secondary"><strong>Header:</strong> <code style="color: #38bdf8;">Authorization: Bearer &lt;copied_key&gt;</code></div>
+          </div>
+        </div>
+        <div class="modal-footer" style="border-top: 1px solid #1e293b;">
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Change Password Modal -->
   <div class="modal fade" id="changePasswordModal" tabindex="-1" aria-labelledby="changePasswordModalLabel" aria-hidden="true">
@@ -3011,6 +3122,7 @@ app.get('/docs', (req, res) => {
       <span class="navbar-brand mb-0 h1 fs-5 fw-bold" style="background: linear-gradient(135deg, #60a5fa, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Universal AI Proxy</span>
       <div class="d-flex align-items-center gap-2">
         <a href="/" class="btn btn-sm btn-outline-primary">Home</a>
+        <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#apiKeyModal" onclick="showApiKeyModal()" title="View & Copy API Key">📋 API Key</button>
         <button class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#changePasswordModal">🔑 Password</button>
         <button class="btn btn-sm btn-outline-danger" onclick="handleLogout()">🚪 Logout</button>
         <span class="badge bg-primary ms-1">v2.1</span>
@@ -3407,6 +3519,38 @@ while (true) {
     </div>
   </div>
 
+  <!-- API Key Modal -->
+  <div class="modal fade" id="apiKeyModal" tabindex="-1" aria-labelledby="apiKeyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content" style="background: #0f172a; border: 1px solid #1e293b; color: #f8fafc; border-radius: 16px;">
+        <div class="modal-header" style="border-bottom: 1px solid #1e293b;">
+          <h5 class="modal-title fw-bold" id="apiKeyModalLabel">📋 API Key</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="pm-label text-uppercase" style="display:block; font-size:0.7rem; letter-spacing:0.8px; color:#64748b; font-weight:700; margin-bottom:5px;">Your Session API Key</label>
+            <div class="input-group">
+              <input type="text" id="modalApiKeyInput" class="form-control form-control-sm font-monospace" style="background: #070a12; color: #60a5fa; border: 1px solid #334155;" readonly value="Loading key...">
+              <button class="btn btn-sm btn-primary fw-bold px-3" type="button" onclick="copyApiKeyFromModal(this)">📋 Copy API Key</button>
+            </div>
+            <div class="form-text small text-secondary mt-1" style="font-size:0.78rem;">Copy this key to use in Copilot, Cursor, Continue, or any OpenAI-compatible client tool.</div>
+          </div>
+
+          <div class="p-3 rounded mb-1" style="background: #070a12; border: 1px solid #1e293b; font-size: 0.82rem;">
+            <div class="fw-bold mb-1 text-info">🛠️ Integration Quick Reference</div>
+            <div class="text-secondary mb-1"><strong>Base URL:</strong> <code style="color: #38bdf8;">http://localhost:3000/v1</code></div>
+            <div class="text-secondary mb-1"><strong>API Key:</strong> Paste copied key above</div>
+            <div class="text-secondary"><strong>Header:</strong> <code style="color: #38bdf8;">Authorization: Bearer &lt;copied_key&gt;</code></div>
+          </div>
+        </div>
+        <div class="modal-footer" style="border-top: 1px solid #1e293b;">
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Change Password Modal -->
   <div class="modal fade" id="changePasswordModal" tabindex="-1" aria-labelledby="changePasswordModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -3519,6 +3663,8 @@ while (true) {
         btn.textContent = 'Update Password';
       }
     }
+
+    document.addEventListener('DOMContentLoaded', updateAuthStatusUI);
   </script>
 </body>
 </html>`);
