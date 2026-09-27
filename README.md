@@ -8,6 +8,8 @@
 
 A production-ready, unified **OpenAI-compatible REST API proxy server** that fronts multiple free AI chat providers alongside your own custom API endpoints. Features automated multi-provider failover routing, custom drag-and-drop combo sequence builders, an interactive dual-pane web UI with live logs, authentication, offline-served static assets, and a Windows System Tray background launcher.
 
+![Universal AI Proxy Screenshot](./screen.png)
+
 ---
 
 ## 🌟 Key Features

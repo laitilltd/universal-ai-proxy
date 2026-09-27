@@ -610,7 +610,7 @@ app.get('/', (req, res) => {
     }
     
     .msg { padding: 12px 16px; border-radius: 12px; margin-bottom: 12px; max-width: 88%; word-wrap: break-word; white-space: pre-wrap; font-size: 0.93rem; line-height: 1.55; }
-    .msg.user { background: #ffffff; color: #000000; margin-left: auto; border-bottom-right-radius: 3px; border: 1px solid #ffffff; font-weight: 500; }
+    .msg.user { background: #0b1120; color: white; margin-left: auto; border-bottom-right-radius: 3px; border: 1px solid gray; font-weight: 500; }
     .msg.assistant { background: #18181b; border: 1px solid #27272a; border-left: 3px solid #ffffff; color: #ffffff; margin-right: auto; border-bottom-left-radius: 3px; }
     .msg.system { background: #18181b; border: 1px solid #3f3f46; color: #ffffff; margin: 0 auto; text-align: center; font-size: 0.85rem; max-width: 95%; font-weight: 600; border-radius: 10px; }
     .msg pre { background: #000000; border: 1px solid #27272a; padding: 10px 14px; border-radius: 8px; overflow-x: auto; margin: 8px 0 0 0; }

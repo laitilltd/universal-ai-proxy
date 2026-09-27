@@ -6,21 +6,25 @@ $g = [System.Drawing.Graphics]::FromImage($bmp)
 $g.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::AntiAlias
 $g.TextRenderingHint = [System.Drawing.Text.TextRenderingHint]::AntiAliasGridFit
 
-# Clear transparent background
+# Transparent background
 $g.Clear([System.Drawing.Color]::Transparent)
 
-# Dark high-contrast background circle (Black & White style)
+# Dark background circle
 $rect = New-Object System.Drawing.Rectangle 2, 2, 60, 60
 $bgBrush = New-Object System.Drawing.SolidBrush ([System.Drawing.ColorTranslator]::FromHtml('#09090b'))
 $g.FillEllipse($bgBrush, $rect)
 
-# Sharp white outer border
-$pen = New-Object System.Drawing.Pen ([System.Drawing.ColorTranslator]::FromHtml('#ffffff')), 2.5
+# Vibrant Colored Outer Border Ring (Electric Indigo / Cyan Gradient border)
+$pen = New-Object System.Drawing.Pen ([System.Drawing.ColorTranslator]::FromHtml('#6366f1')), 3.0
 $g.DrawEllipse($pen, 3, 3, 58, 58)
 
-# Center text "UAI"
-$fontFamily = New-Object System.Drawing.FontFamily("Arial")
-$font = New-Object System.Drawing.Font($fontFamily, 20, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
+# Inner accent ring (Cyan glow)
+$innerPen = New-Object System.Drawing.Pen ([System.Drawing.ColorTranslator]::FromHtml('#06b6d4')), 1.0
+$g.DrawEllipse($innerPen, 5, 5, 54, 54)
+
+# Bold white text "UAI" centered inside colored border
+$fontFamily = New-Object System.Drawing.FontFamily("Arial Black")
+$font = New-Object System.Drawing.Font($fontFamily, 19, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
 $textBrush = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::White)
 
 $stringFormat = New-Object System.Drawing.StringFormat
@@ -44,4 +48,4 @@ $fs.Close()
 $bmp.Dispose()
 $g.Dispose()
 
-Write-Host "app.ico generated successfully with text 'UAI' at $icoPath"
+Write-Host "app.ico updated with 'UAI' text and colored border at $icoPath"
