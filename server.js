@@ -3525,8 +3525,6 @@ while (true) {
 });
 
 // JSON errors instead of the default HTML error page, so clients/UI can display them
-
-// JSON errors instead of the default HTML error page, so clients/UI can display them
 app.use((err, req, res, next) => {
   if (res.headersSent) return next(err);
   const status = err.status || err.statusCode || 500;
